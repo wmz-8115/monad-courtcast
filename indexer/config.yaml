@@ -18,9 +18,9 @@ chains:
     rpc:
       - url: https://testnet-rpc.monad.xyz
         for: sync
-        initial_block_interval: 100
-        interval_ceiling: 100
-    start_block: latest
+        initial_block_interval: 99
+        interval_ceiling: 99
+    start_block: 70143529
     contracts:
       - name: PredictionMarket
         address: "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970"
