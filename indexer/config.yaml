@@ -24,4 +24,4 @@ contracts:
     contracts:
       - name: PredictionMarket
         address: "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970"
-# trigger Envio Cloud deployment
+# trigger Envio Cloud deployment v2
