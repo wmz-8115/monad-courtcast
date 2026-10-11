@@ -15,11 +15,6 @@ contracts:
       - event: "Claimed(uint256 indexed marketId, address indexed claimant, uint256 amount)"
 chains:
   - id: 10143
-    rpc:
-      - url: https://testnet-rpc.monad.xyz
-        for: sync
-        initial_block_interval: 99
-        interval_ceiling: 99
     start_block: 70143529
     contracts:
       - name: PredictionMarket
