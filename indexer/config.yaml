@@ -1,0 +1,23 @@
+# Envio Cloud deployment configuration for the CourtCast Markets Monad Testnet demo.
+# This public address is the deployed PredictionMarket V2 contract; it contains no wallet secret.
+name: monad-courtcast-indexer
+description: Real-time CourtCast Markets prediction-market activity on Monad Testnet
+
+contracts:
+  - name: PredictionMarket
+    events:
+      - event: "MarketCreated(uint256 indexed marketId, address indexed creator, string question, uint64 closeAt, uint64 resolveAt)"
+      - event: "BetPlaced(uint256 indexed marketId, address indexed bettor, uint8 indexed side, uint256 amount)"
+      - event: "MarketFrozen(uint256 indexed marketId)"
+      - event: "MarketResolved(uint256 indexed marketId, uint8 indexed outcome)"
+      - event: "MarketCancelled(uint256 indexed marketId, uint8 indexed outcome)"
+      - event: "MarketVoided(uint256 indexed marketId, address indexed creator)"
+      - event: "Claimed(uint256 indexed marketId, address indexed claimant, uint256 amount)"
+
+chains:
+  - id: 10143 # Monad Testnet
+    # Covers the demo deployment and recent historical markets without indexing the full testnet.
+    start_block: 69627251
+    contracts:
+      - name: PredictionMarket
+        address: "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970"
