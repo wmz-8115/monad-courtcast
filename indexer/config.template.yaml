@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: pointpulse-market-indexer
-description: Real-time PointPulse prediction-market activity on Monad Testnet
+description: Real-time CourtCast Markets prediction-market activity on Monad Testnet
 
 contracts:
   - name: PredictionMarket

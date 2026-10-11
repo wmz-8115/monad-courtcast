@@ -1,6 +1,6 @@
-# PointPulse
+# CourtCast Markets
 
-PointPulse 是运行在 Monad Testnet 的 YES / NO 预测市场演示。它与旧的 TimedGift 项目独立：这里仅保留预测市场所需的合约、测试、部署模块和 React 前端。
+CourtCast Markets 是运行在 Monad Testnet 的 YES / NO 预测市场演示。它与旧的 TimedGift 项目独立：这里仅保留预测市场所需的合约、测试、部署模块和 React 前端。内部代码中的 PointPulse 仅作为早期模块名保留，不影响运行。
 
 ## 内容
 

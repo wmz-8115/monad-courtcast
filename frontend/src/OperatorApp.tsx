@@ -122,7 +122,7 @@ export function OperatorApp() {
   return (
     <main className="app-shell pointpulse-shell">
       <header className="topbar">
-        <div className="brand"><div className="brand-mark" aria-hidden="true">◉</div><strong>PointPulse · 运营后台</strong><span className="network-pill">◇ Monad Testnet</span></div>
+        <div className="brand"><div className="brand-mark" aria-hidden="true">◉</div><strong>CourtCast Markets · 运营后台</strong><span className="network-pill">◇ Monad Testnet</span></div>
         <div className="wallet-summary"><a className="page-link" href="/">交易页</a><button className="wallet-button" type="button" onClick={() => void connect()}>{address === undefined ? "连接运营钱包" : "刷新"}</button></div>
       </header>
       <section className="warning-banner" role="note"><span>⚠</span> 仅限演示。撤回会让所有已下注用户可领取原始下注退款。</section>
