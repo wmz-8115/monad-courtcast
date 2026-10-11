@@ -1,0 +1,19 @@
+{
+  "name": "pointpulse-envio-indexer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "configure": "node scripts/configure.mjs",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "envio": "3.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.8.3"
+  }
+}

@@ -1,0 +1,30 @@
+"""A PointPulse market reconstructed from its contract events."""
+type Market {
+  id: ID!
+  marketId: BigInt! @index
+  creator: String! @index
+  question: String!
+  closeAt: BigInt!
+  resolveAt: BigInt!
+  state: String! @index
+  outcome: String
+  yesPool: BigInt!
+  noPool: BigInt!
+  createdBlock: BigInt!
+  createdAt: BigInt!
+  updatedBlock: BigInt!
+  updatedAt: BigInt!
+}
+
+"""An immutable audit row for every user-visible market lifecycle event."""
+type MarketActivity {
+  id: ID!
+  market: Market!
+  kind: String! @index
+  actor: String! @index
+  side: String
+  amount: BigInt
+  transactionHash: String! @index
+  blockNumber: BigInt! @index
+  timestamp: BigInt!
+}
