@@ -13,7 +13,7 @@ contracts:
       - event: "MarketCancelled(uint256 indexed marketId, uint8 indexed outcome)"
       - event: "MarketVoided(uint256 indexed marketId, address indexed creator)"
       - event: "Claimed(uint256 indexed marketId, address indexed claimant, uint256 amount)"
- chains:
+chains:
   - id: 10143
     rpc:
       - url: https://testnet-rpc.monad.xyz
@@ -24,4 +24,4 @@ contracts:
     contracts:
       - name: PredictionMarket
         address: "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970"
-# trigger Envio Cloud deployment v2
+# trigger Envio Cloud deployment v3
