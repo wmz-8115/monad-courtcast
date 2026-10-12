@@ -3,6 +3,7 @@ import { indexer } from "envio";
 const YES = 1n;
 const NO = 2n;
 const UNRESOLVED = 0n;
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const outcomeName = (outcome: bigint) => outcome === YES ? "YES" : outcome === NO ? "NO" : "UNRESOLVED";
 const activityId = (hash: string) => hash.toLowerCase();
@@ -12,7 +13,7 @@ async function writeActivity(
   event: any,
   marketId: string,
   kind: string,
-  actor: string,
+  actor: string | undefined,
   side?: string,
   amount?: bigint,
 ) {
@@ -20,7 +21,7 @@ async function writeActivity(
     id: activityId(event.transaction.hash),
     market_id: marketId,
     kind,
-    actor: actor.toLowerCase(),
+    actor: (actor ?? ZERO_ADDRESS).toLowerCase(),
     side,
     amount,
     transactionHash: event.transaction.hash,

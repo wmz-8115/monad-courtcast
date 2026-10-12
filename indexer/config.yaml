@@ -16,8 +16,9 @@ contracts:
 
 chains:
   - id: 10143 # Monad Testnet
-    # Covers the demo deployment and recent historical markets without indexing the full testnet.
-    start_block: 69627251
+    # Monad is supported by Envio HyperSync. Do not override it with the
+    # wallet-facing public RPC, which is rate-limited for log queries.
+    start_block: 70143529
     contracts:
       - name: PredictionMarket
         address: "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970"

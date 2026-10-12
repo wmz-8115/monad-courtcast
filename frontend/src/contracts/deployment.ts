@@ -41,9 +41,19 @@ type PointPulseDeployment = {
 
 const pointPulseDeploymentStorageKey = `pointpulse-deployment-${monadTestnet.id}`;
 
+const configuredMockUsdcAddress = import.meta.env.VITE_MUSDC_ADDRESS as string | undefined;
+const configuredPredictionMarketAddress = import.meta.env.VITE_MARKET_ADDRESS as string | undefined;
+
+function deploymentAddress(value: string | undefined, fallback: Address, label: string): Address {
+  const candidate = value?.trim() || fallback;
+  if (!isAddress(candidate)) throw new Error(`${label} 不是有效的 EVM 合约地址。`);
+  return getAddress(candidate);
+}
+
 /**
- * Addresses checked into source after a managed deployment. They intentionally
- * start empty: the UI can instead remember a deployment approved in MetaMask.
+ * Public Monad Testnet deployment used by visitors and fresh clones. These are
+ * public contract addresses, not secrets. A self-hosted deployment can replace
+ * them through VITE_MUSDC_ADDRESS and VITE_MARKET_ADDRESS.
  */
 export const pointPulseDeployment: {
   readonly chainId: typeof monadTestnet.id;
@@ -51,8 +61,16 @@ export const pointPulseDeployment: {
   readonly predictionMarketAddress: Address | undefined;
 } = {
   chainId: monadTestnet.id,
-  mockUsdcAddress: undefined,
-  predictionMarketAddress: undefined,
+  mockUsdcAddress: deploymentAddress(
+    configuredMockUsdcAddress,
+    "0xE26c912bA6088cb10465c4D92a1425D8eBFC413b",
+    "VITE_MUSDC_ADDRESS",
+  ),
+  predictionMarketAddress: deploymentAddress(
+    configuredPredictionMarketAddress,
+    "0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970",
+    "VITE_MARKET_ADDRESS",
+  ),
 };
 
 function getBrowserSavedDeployment(): PointPulseDeployment | undefined {
