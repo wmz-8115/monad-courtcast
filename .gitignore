@@ -3,4 +3,5 @@ artifacts/
 cache/
 ignition/deployments/
 frontend/dist/
+dist/
 .env
