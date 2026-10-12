@@ -31,7 +31,10 @@ async function writeActivity(
 }
 
 // Transaction hash is explicitly requested because it is not a default event field.
-const eventFields = { transaction: ["hash", "from"] as const };
+const eventFields = {
+  block: ["timestamp"] as const,
+  transaction: ["hash", "from"] as const,
+};
 
 indexer.onEvent({ contract: "PredictionMarket", event: "MarketCreated", fields: eventFields }, async ({ event, context }) => {
   const id = event.params.marketId.toString();
