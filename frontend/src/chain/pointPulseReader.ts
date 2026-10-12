@@ -121,7 +121,7 @@ async function fetchEnvioMarkets(): Promise<EnvioMarket[]> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       query: `query CourtCastMarkets {
-        Market(order_by: { updatedAt: desc }, limit: 50) {
+        Market(order_by: { updatedAt: desc }, limit: 200) {
           id marketId creator question closeAt resolveAt state outcome yesPool noPool
         }
       }`,
@@ -177,7 +177,7 @@ export async function getPointPulseSnapshot(viewer?: Address) {
 
 async function readMarketsFromRpc(marketAddress: Address, viewer?: Address): Promise<MarketView[]> {
   const rawMarketCount = await monadPublicClient.readContract({ address: marketAddress, abi: predictionMarketAbi, functionName: "marketCount" });
-  const total = Math.min(Number(expectBigInt(rawMarketCount, "marketCount")), 50);
+  const total = Math.min(Number(expectBigInt(rawMarketCount, "marketCount")), 200);
   return Promise.all(Array.from({ length: total }, async (_, index) => {
     const id = BigInt(index);
     const market = expectMarket(await monadPublicClient.readContract({ address: marketAddress, abi: predictionMarketAbi, functionName: "getMarket", args: [id] }));
