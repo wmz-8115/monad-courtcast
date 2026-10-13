@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: courtcast-operator
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: POINTPULSE_MUSDC_ADDRESS
+        value: 0xE26c912bA6088cb10465c4D92a1425D8eBFC413b
+      - key: POINTPULSE_MARKET_ADDRESS
+        value: 0x1C40571CBDA4313092f0a41B15ad2Aa9B10B1970
+      - key: COURTCAST_OPERATOR_ALLOWED_ORIGIN
+        value: https://courtcast-markets.brawny-chick-5418.chatgpt.site
+      - key: COURTCAST_DEMO_PUBLIC_START
+        value: "true"
+      - key: COURTCAST_DEMO_COOLDOWN_SECONDS
+        value: "300"
+      - key: COURTCAST_DEMO_MAX_SESSIONS
+        value: "8"
+      - key: POINTPULSE_OPERATOR_PRIVATE_KEY
+        sync: false
