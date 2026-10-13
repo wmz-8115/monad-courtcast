@@ -6,28 +6,28 @@ import {
   prerecordedTennisMarkets,
 } from "../engine/prerecordedScenario.js";
 
-describe("prerecorded tennis scenario", () => {
+describe("CourtCast prerecorded tennis scenario", () => {
   it("contains five intentionally overlapping short markets", () => {
     assert.equal(prerecordedTennisMarkets.length, 5);
-    assert.equal(prerecordedTennisMarkets[0].videoStartSeconds, 15);
-    assert.equal(prerecordedTennisMarkets[0].publicationLeadSeconds, 8);
+    assert.equal(prerecordedTennisMarkets[0].videoStartSeconds, 18);
+    assert.equal(prerecordedTennisMarkets[0].publicationLeadSeconds, 0);
     assert.ok(
-      prerecordedTennisMarkets[1].videoStartSeconds
-        < prerecordedTennisMarkets[0].videoStartSeconds
-          + prerecordedTennisMarkets[0].bettingWindowSeconds,
+      prerecordedTennisMarkets[2].videoStartSeconds
+        < prerecordedTennisMarkets[1].videoStartSeconds
+          + prerecordedTennisMarkets[1].bettingWindowSeconds,
     );
   });
 
-  it("builds a deterministic operator plan every roughly three seconds", () => {
+  it("builds a deterministic, faucet-budgeted operator plan", () => {
     const market = prerecordedTennisMarkets[1];
     const firstPlan = buildAutoBetPlan(market);
     const secondPlan = buildAutoBetPlan(market);
 
     assert.deepEqual(firstPlan, secondPlan);
     assert.ok(firstPlan.length > 0);
-    assert.ok(firstPlan.every((order) => order.amountMusdc >= 20 && order.amountMusdc <= 50));
-    assert.ok(firstPlan.every((order) => order.offsetSeconds < market.bettingWindowSeconds));
-    assert.ok(firstPlan.every((order, index) => index === 0 || order.offsetSeconds - firstPlan[index - 1].offsetSeconds >= 2));
-    assert.ok(firstPlan.every((order, index) => index === 0 || order.offsetSeconds - firstPlan[index - 1].offsetSeconds <= 4));
+    assert.ok(firstPlan.every((order) => order.amountMusdc >= 3 && order.amountMusdc <= 7));
+    assert.ok(firstPlan.every((order) => order.offsetSeconds < market.bettingWindowSeconds - 3));
+    const totalBudget = prerecordedTennisMarkets.flatMap(buildAutoBetPlan).reduce((sum, order) => sum + order.amountMusdc, 0);
+    assert.ok(totalBudget <= 100);
   });
 });

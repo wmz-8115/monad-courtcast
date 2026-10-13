@@ -41,6 +41,11 @@ export class DemoOperator {
     return this.#onchainMarketIds;
   }
 
+  /** True only after every create, demo bet, freeze, and resolution has succeeded. */
+  get isComplete(): boolean {
+    return this.#sessionStartedAt !== undefined && this.#completed.size === this.#plan.length;
+  }
+
   async tick(now: number, adapter: OperatorChainAdapter): Promise<ExecutedDemoAction[]> {
     if (this.#sessionStartedAt === undefined) throw new Error("请先启动演示。");
     const elapsedSeconds = now - this.#sessionStartedAt;

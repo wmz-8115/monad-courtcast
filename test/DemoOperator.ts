@@ -34,7 +34,7 @@ describe("DemoOperator", () => {
     const { adapter, calls } = createFakeAdapter();
     operator.start(1_000);
 
-    const first = await operator.tick(1_007, adapter);
+    const first = await operator.tick(1_018, adapter);
     const completed = await operator.tick(1_050, adapter);
     const repeated = await operator.tick(1_050, adapter);
 
@@ -45,6 +45,6 @@ describe("DemoOperator", () => {
     assert.deepEqual(repeated, []);
     assert.equal(operator.onchainMarketIds.get(market.id), 0n);
     assert.equal(calls.filter((call) => call.startsWith("create:")).length, 1);
-    assert.ok(calls.at(-1)?.startsWith("resolve:0:NO"));
+    assert.ok(calls.at(-1)?.startsWith("resolve:0:YES"));
   });
 });

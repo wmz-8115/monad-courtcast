@@ -15,9 +15,9 @@ describe("demo run plan", () => {
     assert.equal(creates.length, 5);
     assert.equal(freezes.length, 5);
     assert.equal(resolves.length, 5);
-    assert.ok(autoBets.length > 30);
+    assert.equal(autoBets.length, 14);
     assert.equal(plan[0].type, "CREATE");
-    assert.equal(plan[0].atOffsetSeconds, 7);
+    assert.equal(plan[0].atOffsetSeconds, 18);
     assert.ok(plan.every((action, index) => index === 0 || action.atOffsetSeconds >= plan[index - 1].atOffsetSeconds));
   });
 

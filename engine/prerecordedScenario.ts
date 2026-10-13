@@ -5,7 +5,7 @@ export type PrewrittenMarket = {
   /** Publish this many seconds before the market becomes visible in the replay. */
   publicationLeadSeconds: number;
   videoStartSeconds: number;
-  bettingWindowSeconds: 30 | 45 | 60;
+  bettingWindowSeconds: number;
   resolveDelaySeconds: number;
   question: string;
   expectedOutcome: DemoOutcome;
@@ -18,53 +18,57 @@ export type AutoBetInstruction = {
 };
 
 /**
- * Video-independent placeholder timeline. Once the user supplies licensed
- * footage, only the questions, offsets, and outcomes need retiming.
+ * CourtCast's 25:30–27:37 Zheng Qinwen replay. Times are relative to the
+ * trimmed replay and are executed by the private operator, not manufactured
+ * by the browser. Outcomes are deliberately deterministic test outcomes and
+ * can be replaced before a public presentation.
  */
 export const prerecordedTennisMarkets: readonly PrewrittenMarket[] = [
   {
-    id: "serve-ace-01",
-    publicationLeadSeconds: 8,
-    videoStartSeconds: 15,
-    bettingWindowSeconds: 30,
-    resolveDelaySeconds: 5,
-    question: "Will this serve be an ace?",
-    expectedOutcome: "NO",
-  },
-  {
-    id: "second-serve-fault-02",
-    publicationLeadSeconds: 8,
-    videoStartSeconds: 40,
-    bettingWindowSeconds: 45,
-    resolveDelaySeconds: 5,
-    question: "Will the second serve be a fault?",
+    id: "courtcast-next-point-01",
+    publicationLeadSeconds: 0,
+    videoStartSeconds: 18,
+    bettingWindowSeconds: 20,
+    resolveDelaySeconds: 4,
+    question: "下一球郑钦文获胜？",
     expectedOutcome: "YES",
   },
   {
-    id: "rally-length-03",
-    publicationLeadSeconds: 8,
-    videoStartSeconds: 70,
-    bettingWindowSeconds: 60,
-    resolveDelaySeconds: 5,
-    question: "Will this rally last at least four shots?",
-    expectedOutcome: "YES",
-  },
-  {
-    id: "receiver-point-04",
-    publicationLeadSeconds: 8,
-    videoStartSeconds: 110,
-    bettingWindowSeconds: 30,
-    resolveDelaySeconds: 5,
-    question: "Will the receiver win this point?",
+    id: "courtcast-second-serve-02",
+    publicationLeadSeconds: 0,
+    videoStartSeconds: 57,
+    // The original brief said both "12 seconds" and "ends at 26:29". The
+    // documented 12-second interpretation is retained: 26:27–26:39.
+    bettingWindowSeconds: 12,
+    resolveDelaySeconds: 4,
+    question: "郑钦文下一次发球是否二发？",
     expectedOutcome: "NO",
   },
   {
-    id: "serve-in-05",
-    publicationLeadSeconds: 8,
-    videoStartSeconds: 135,
-    bettingWindowSeconds: 45,
-    resolveDelaySeconds: 5,
-    question: "Will this serve land in?",
+    id: "courtcast-second-serve-in-03",
+    publicationLeadSeconds: 0,
+    videoStartSeconds: 60,
+    bettingWindowSeconds: 25,
+    resolveDelaySeconds: 4,
+    question: "若出现二发，郑钦文二发是否成功？",
+    expectedOutcome: "YES",
+  },
+  {
+    id: "courtcast-game-winner-04",
+    publicationLeadSeconds: 0,
+    videoStartSeconds: 90,
+    bettingWindowSeconds: 120,
+    resolveDelaySeconds: 4,
+    question: "本局郑钦文获胜？",
+    expectedOutcome: "NO",
+  },
+  {
+    id: "courtcast-next-point-05",
+    publicationLeadSeconds: 0,
+    videoStartSeconds: 90,
+    bettingWindowSeconds: 19,
+    resolveDelaySeconds: 4,
+    question: "下一球郑钦文获胜？",
     expectedOutcome: "YES",
   },
 ];
@@ -83,23 +87,24 @@ function nextRandom(seed: number): number {
 }
 
 /**
- * Creates repeatable operator orders about every three seconds. Reproducible
- * pseudo-randomness makes a presentation stable while still looking active.
+ * Creates a small, repeatable set of real test bets. The amounts deliberately
+ * stay below a single 100 mUSDC faucet allocation across all five markets.
  */
 export function buildAutoBetPlan(market: PrewrittenMarket): AutoBetInstruction[] {
   const plan: AutoBetInstruction[] = [];
   let seed = seedFrom(market.id);
-  let offsetSeconds = 2;
+  const safeWindow = Math.max(2, market.bettingWindowSeconds - 4);
+  const betCount = market.bettingWindowSeconds <= 12 ? 2 : 3;
 
-  while (offsetSeconds < market.bettingWindowSeconds) {
+  for (let index = 1; index <= betCount; index += 1) {
     seed = nextRandom(seed);
-    const amountMusdc = 20 + (seed % 31);
+    const amountMusdc = 3 + (seed % 5);
     seed = nextRandom(seed);
     const side: DemoOutcome = seed % 2 === 0 ? "YES" : "NO";
-    plan.push({ offsetSeconds, side, amountMusdc });
-
     seed = nextRandom(seed);
-    offsetSeconds += 2 + (seed % 3);
+    const nominalOffset = Math.floor((safeWindow * index) / (betCount + 1));
+    const jitter = seed % 2;
+    plan.push({ offsetSeconds: Math.min(safeWindow, Math.max(2, nominalOffset + jitter)), side, amountMusdc });
   }
 
   return plan;

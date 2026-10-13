@@ -146,8 +146,9 @@ export async function getPointPulseSnapshot(viewer?: Address) {
     // The RPC path remains available while Envio is restarting or rate-limited.
   }
 
-  const markets = indexedMarkets
-    ? await Promise.all(indexedMarkets.map(async (indexedMarket) => {
+  const marketsFromIndexer = indexedMarkets === undefined
+    ? undefined
+    : await Promise.all(indexedMarkets.map(async (indexedMarket) => {
       const id = asBigInt(indexedMarket.marketId, "marketId");
       const position = viewer === undefined
         ? [0n, 0n] as const
@@ -170,16 +171,29 @@ export async function getPointPulseSnapshot(viewer?: Address) {
         yesStake: position[0],
         noStake: position[1],
       } satisfies MarketView;
-    }))
-    : await readMarketsFromRpc(marketAddress, viewer);
-  return { oracle, markets: [...markets].reverse() };
+    }));
+
+  if (marketsFromIndexer === undefined) {
+    return { oracle, markets: await readMarketsFromRpc(marketAddress, viewer) };
+  }
+
+  // Envio is ideal for historical queries, but an indexer can lag a newly
+  // created demo market by several seconds. Always overlay the newest on-chain
+  // records so a market appears in sync with the replay rather than only after
+  // the indexer catches up.
+  const newestOnChain = await readMarketsFromRpc(marketAddress, viewer, 12);
+  const merged = new Map(marketsFromIndexer.map((market) => [market.id.toString(), market]));
+  for (const market of newestOnChain) merged.set(market.id.toString(), market);
+  return { oracle, markets: [...merged.values()].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0) };
 }
 
-async function readMarketsFromRpc(marketAddress: Address, viewer?: Address): Promise<MarketView[]> {
+async function readMarketsFromRpc(marketAddress: Address, viewer?: Address, maximum = 200): Promise<MarketView[]> {
   const rawMarketCount = await monadPublicClient.readContract({ address: marketAddress, abi: predictionMarketAbi, functionName: "marketCount" });
-  const total = Math.min(Number(expectBigInt(rawMarketCount, "marketCount")), 200);
+  const count = Number(expectBigInt(rawMarketCount, "marketCount"));
+  const total = Math.min(count, maximum);
+  const firstId = count - total;
   return Promise.all(Array.from({ length: total }, async (_, index) => {
-    const id = BigInt(index);
+    const id = BigInt(firstId + index);
     const market = expectMarket(await monadPublicClient.readContract({ address: marketAddress, abi: predictionMarketAbi, functionName: "getMarket", args: [id] }));
     const position = viewer === undefined ? [0n, 0n] as const : expectPosition(await monadPublicClient.readContract({ address: marketAddress, abi: predictionMarketAbi, functionName: "getUserPosition", args: [id, viewer] }));
     return { id, ...market, yesStake: position[0], noStake: position[1] } satisfies MarketView;

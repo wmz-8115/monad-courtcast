@@ -41,8 +41,11 @@ type PointPulseDeployment = {
 
 const pointPulseDeploymentStorageKey = `pointpulse-deployment-${monadTestnet.id}`;
 
-const configuredMockUsdcAddress = import.meta.env.VITE_MUSDC_ADDRESS as string | undefined;
-const configuredPredictionMarketAddress = import.meta.env.VITE_MARKET_ADDRESS as string | undefined;
+// This module is also imported by the private Node operator. Vite provides
+// import.meta.env in the browser build, while Node exposes no `env` member.
+const viteEnv = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
+const configuredMockUsdcAddress = typeof viteEnv?.VITE_MUSDC_ADDRESS === "string" ? viteEnv.VITE_MUSDC_ADDRESS : undefined;
+const configuredPredictionMarketAddress = typeof viteEnv?.VITE_MARKET_ADDRESS === "string" ? viteEnv.VITE_MARKET_ADDRESS : undefined;
 
 function deploymentAddress(value: string | undefined, fallback: Address, label: string): Address {
   const candidate = value?.trim() || fallback;

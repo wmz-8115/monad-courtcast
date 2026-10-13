@@ -317,25 +317,38 @@ input:focus { border-color: #765be7; box-shadow: 0 0 0 3px #765be71c; }
 .floating-market-layer { position: absolute; z-index: 12; inset: 0; pointer-events: none; }
 .floating-market-layer > * { pointer-events: auto; }
 .market-scale-0 { --market-card-scale: .82; }.market-scale-1 { --market-card-scale: 1; }.market-scale-2 { --market-card-scale: 1.18; }
-
-.floating-market {
+.floating-market-stack {
   position: absolute;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
   width: min(330px, 26vw);
+  transform: scale(var(--market-card-scale));
+  transform-origin: top right;
+  transition: left .42s cubic-bezier(.2,.8,.2,1), top .42s cubic-bezier(.2,.8,.2,1), transform .35s ease;
+}
+.floating-market-stack-default { top: 70px; right: 18px; }
+.floating-market-stack-custom { top: var(--market-stack-y); left: var(--market-stack-x); right: auto; transform-origin: top left; }
+.market-drag-handle { justify-self: end; display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #ffffff1c; border-radius: 999px; color: #b8c3b9; background: #071009aa; cursor: grab; font-size: 9px; font-weight: 850; letter-spacing: .06em; touch-action: none; backdrop-filter: blur(12px); }
+.market-drag-handle:active { cursor: grabbing; }
+.market-drag-handle span { color: #c9ff6b; font-size: 13px; line-height: 9px; }
+.floating-market {
+  width: 100%;
   padding: 17px;
-  transform: translateY(-50%) scale(var(--market-card-scale));
-  transform-origin: center;
   border: 1px solid #ffffff29;
   border-radius: 17px;
   color: #f8faf7;
-  background: #0b100de8;
+  background: #0b100dd8;
   box-shadow: 0 18px 50px #0009;
   backdrop-filter: blur(18px);
-  transition: top .55s cubic-bezier(.2,.8,.2,1), left .55s cubic-bezier(.2,.8,.2,1), right .55s cubic-bezier(.2,.8,.2,1), transform .35s ease, width .35s ease;
+  transition: opacity .34s ease, transform .46s cubic-bezier(.2,.8,.2,1), filter .34s ease, width .35s ease;
   animation: market-arrive .42s cubic-bezier(.2,.8,.2,1) both;
 }
-.floating-market-left { left: 18px; }.floating-market-right { right: 18px; }
-.floating-market-middle { top: 57%; }.floating-market-top { top: 30%; }
 @keyframes market-arrive { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
+.floating-market-freezing { pointer-events: none; border-color: #ffcc6a66; opacity: .68; filter: saturate(.7); animation: market-freeze-away 2.7s cubic-bezier(.2,.8,.2,1) both; }
+.floating-market-urgent { border-color: #ff6e657a; box-shadow: 0 0 0 1px #ff735731, 0 18px 50px #0009, 0 0 36px #ff63543c; animation: market-urgent .85s ease-in-out infinite alternate; }
+@keyframes market-freeze-away { 0% { opacity: 1; transform: translateY(0) scale(1); } 18% { opacity: 1; border-color: #ffe277; } 100% { opacity: 0; transform: translateY(-16px) scale(.97); filter: blur(3px); } }
+@keyframes market-urgent { from { transform: translateY(0); } to { transform: translateY(-2px); box-shadow: 0 0 0 1px #ff735755, 0 18px 50px #0009, 0 0 52px #ff63545e; } }
 .floating-market-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #8d9b91; font-size: 10px; font-weight: 750; }
 .market-state { padding: 5px 7px; border-radius: 999px; color: #d0ff84; background: #b9fa6020; }
 .market-state-1 { color: #ffd37a; background: #ffb82e1c; }
@@ -355,6 +368,7 @@ input:focus { border-color: #765be7; box-shadow: 0 0 0 3px #765be71c; }
 .floating-bet-actions button:last-child { color: #fff1ee; background: #a7413c; }
 .floating-bet-actions small { font-size: 9px; opacity: .78; }
 .market-waiting { margin: 2px 0 0; color: #c9b77e; font-size: 11px; }
+.market-freezing-note { display: flex; align-items: center; gap: 7px; margin: 4px 0 0; color: #ffda84; font-size: 11px; font-weight: 750; }.market-freezing-note span { display: grid; width: 17px; height: 17px; place-items: center; border-radius: 50%; color: #172011; background: #ffda84; font-size: 10px; }
 .no-live-market { position: absolute; z-index: 7; bottom: 18px; left: 50%; display: flex; align-items: center; gap: 8px; transform: translateX(-50%); padding: 8px 12px; border: 1px solid #ffffff18; border-radius: 999px; color: #aab3ac; background: #050805b8; font-size: 11px; backdrop-filter: blur(10px); }
 .no-live-market span { color: #c9ff6b; font-size: 17px; }
 .market-queue { position: absolute; z-index: 9; right: 19px; bottom: 17px; color: #c9d1ca; font-size: 10px; }
@@ -405,7 +419,7 @@ input:focus { border-color: #765be7; box-shadow: 0 0 0 3px #765be71c; }
 
 @media (max-width: 1080px) {
   .cinema-video-wrap, .cinema-video { min-height: 720px; height: 720px; }
-  .floating-market { width: min(330px, 32vw); }
+  .floating-market-stack { width: min(330px, 34vw); }
   .no-live-market { bottom: 20px; }
 }
 @media (max-width: 680px) {
@@ -413,10 +427,11 @@ input:focus { border-color: #765be7; box-shadow: 0 0 0 3px #765be71c; }
   .cinema-stage { padding: 8px; }.cinema-video-wrap, .cinema-video { min-height: calc(100vh - 120px); height: calc(100vh - 120px); border-radius: 15px; }
   .replay-intro { align-content: start; padding-top: 19vh; }.replay-intro h1 { font-size: 44px; }.replay-intro p { font-size: 13px; }
   .stage-status { top: 14px; left: 13px; }
-  .floating-market { left: 10px; right: 10px; width: auto; padding: 13px; transform: translateY(-50%) scale(var(--market-card-scale)); }
-  .floating-market-top { top: 31%; }.floating-market-middle { top: 60%; }
-  .floating-market-left, .floating-market-right { left: 10px; right: 10px; }
-  .floating-market-left.floating-market-middle { display: none; }
+  .floating-market-stack { left: 10px; right: 10px; width: auto; max-height: 62vh; overflow: auto; transform: scale(var(--market-card-scale)); transform-origin: top right; }
+  .floating-market-stack-default { top: 65px; right: 10px; }
+  .floating-market-stack-custom { left: 10px; right: 10px; top: 65px; }
+  .market-drag-handle { display: none; }
+  .floating-market { padding: 13px; }
   .floating-market h2 { margin: 9px 0 10px; font-size: 15px; }.floating-odds { margin-bottom: 8px; }.floating-odds span { padding: 7px 9px; }.floating-bet { grid-template-columns: .85fr 1.15fr; align-items: center; }.floating-bet-actions button { padding: 10px 8px; }
   .market-queue { display: none; }.courtcast-footer { padding: 4px 13px 13px; }.courtcast-footer span:first-child { display: none; }.courtcast-footer span:last-child { max-width: 100%; text-align: left; }
   .account-drawer { padding: 19px; }

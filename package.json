@@ -11,6 +11,7 @@
     "demo:orchestrator": "tsx scripts/orchestrate-market.ts",
     "demo:settlement": "tsx scripts/plan-settlement.ts",
     "operator:demo": "tsx scripts/run-operator-demo.ts",
+    "operator:serve": "tsx scripts/serve-courtcast-operator.ts",
     "dev:frontend": "vite frontend",
     "build:frontend": "vite build frontend",
     "preview:frontend": "vite preview frontend"
