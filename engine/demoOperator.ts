@@ -3,13 +3,14 @@ import type { DemoOutcome, PrewrittenMarket } from "./prerecordedScenario.js";
 
 export type OperatorChainAdapter = {
   createMarket(question: string, closeAt: number, resolveAt: number): Promise<bigint>;
-  placeBet(marketId: bigint, side: DemoOutcome, amountMusdc: number): Promise<void>;
+  placeBet(marketId: bigint, side: DemoOutcome, amountMusdc: number): Promise<boolean>;
   freezeMarket(marketId: bigint): Promise<void>;
   resolveMarket(marketId: bigint, outcome: DemoOutcome): Promise<void>;
+  claim(marketId: bigint): Promise<boolean>;
 };
 
 export type ExecutedDemoAction = {
-  action: ScheduledDemoAction["type"];
+  action: ScheduledDemoAction["type"] | "SKIPPED" | "AUTO_BET_SKIPPED" | "CLAIM_SKIPPED";
   marketId: string;
   onchainMarketId?: bigint;
 };
@@ -23,6 +24,7 @@ export class DemoOperator {
   #sessionStartedAt?: number;
   #completed = new Set<number>();
   #onchainMarketIds = new Map<string, bigint>();
+  #skippedMarkets = new Set<string>();
 
   constructor(markets: readonly PrewrittenMarket[]) {
     this.#plan = buildDemoRunPlan(markets);
@@ -55,7 +57,7 @@ export class DemoOperator {
       const scheduled = this.#plan[index];
       if (scheduled.atOffsetSeconds > elapsedSeconds || this.#completed.has(index)) continue;
 
-      const completed = await this.#execute(scheduled, adapter);
+      const completed = await this.#execute(scheduled, adapter, now);
       if (completed !== undefined) {
         this.#completed.add(index);
         executed.push(completed);
@@ -68,6 +70,7 @@ export class DemoOperator {
   async #execute(
     scheduled: ScheduledDemoAction,
     adapter: OperatorChainAdapter,
+    now: number,
   ): Promise<ExecutedDemoAction | undefined> {
     const { market } = scheduled;
     const existingMarketId = this.#onchainMarketIds.get(market.id);
@@ -75,25 +78,38 @@ export class DemoOperator {
     if (scheduled.type === "CREATE") {
       const closeAt = this.#sessionStartedAt! + market.videoStartSeconds + market.bettingWindowSeconds;
       const resolveAt = closeAt + market.resolveDelaySeconds;
+      if (now >= closeAt) {
+        this.#skippedMarkets.add(market.id);
+        return { action: "SKIPPED", marketId: market.id };
+      }
       const onchainMarketId = await adapter.createMarket(market.question, closeAt, resolveAt);
       this.#onchainMarketIds.set(market.id, onchainMarketId);
       return { action: "CREATE", marketId: market.id, onchainMarketId };
     }
+
+    if (this.#skippedMarkets.has(market.id)) return { action: "SKIPPED", marketId: market.id };
 
     // CREATE may be retrying after a transient RPC failure. Do not lose later
     // actions; keep them pending until the corresponding ID exists.
     if (existingMarketId === undefined) return undefined;
 
     if (scheduled.type === "AUTO_BET") {
-      await adapter.placeBet(existingMarketId, scheduled.bet.side, scheduled.bet.amountMusdc);
-      return { action: "AUTO_BET", marketId: market.id, onchainMarketId: existingMarketId };
+      const closeAt = this.#sessionStartedAt! + market.videoStartSeconds + market.bettingWindowSeconds;
+      if (now >= closeAt) return { action: "AUTO_BET_SKIPPED", marketId: market.id, onchainMarketId: existingMarketId };
+      const placed = await adapter.placeBet(existingMarketId, scheduled.bet.side, scheduled.bet.amountMusdc);
+      return { action: placed ? "AUTO_BET" : "AUTO_BET_SKIPPED", marketId: market.id, onchainMarketId: existingMarketId };
     }
     if (scheduled.type === "FREEZE") {
       await adapter.freezeMarket(existingMarketId);
       return { action: "FREEZE", marketId: market.id, onchainMarketId: existingMarketId };
     }
 
-    await adapter.resolveMarket(existingMarketId, market.expectedOutcome);
-    return { action: "RESOLVE", marketId: market.id, onchainMarketId: existingMarketId };
+    if (scheduled.type === "RESOLVE") {
+      await adapter.resolveMarket(existingMarketId, market.expectedOutcome);
+      return { action: "RESOLVE", marketId: market.id, onchainMarketId: existingMarketId };
+    }
+
+    const claimed = await adapter.claim(existingMarketId);
+    return { action: claimed ? "CLAIM" : "CLAIM_SKIPPED", marketId: market.id, onchainMarketId: existingMarketId };
   }
 }

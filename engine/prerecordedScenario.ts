@@ -56,7 +56,7 @@ export const prerecordedTennisMarkets: readonly PrewrittenMarket[] = [
   {
     id: "courtcast-game-winner-04",
     publicationLeadSeconds: 0,
-    videoStartSeconds: 90,
+    videoStartSeconds: 3,
     bettingWindowSeconds: 120,
     resolveDelaySeconds: 4,
     question: "本局郑钦文获胜？",

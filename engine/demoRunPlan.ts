@@ -8,7 +8,8 @@ export type DemoRunAction =
   | { type: "CREATE"; market: PrewrittenMarket }
   | { type: "AUTO_BET"; market: PrewrittenMarket; bet: AutoBetInstruction }
   | { type: "FREEZE"; market: PrewrittenMarket }
-  | { type: "RESOLVE"; market: PrewrittenMarket };
+  | { type: "RESOLVE"; market: PrewrittenMarket }
+  | { type: "CLAIM"; market: PrewrittenMarket };
 
 export type ScheduledDemoAction = DemoRunAction & {
   atOffsetSeconds: number;
@@ -19,6 +20,7 @@ const actionPriority: Record<DemoRunAction["type"], number> = {
   AUTO_BET: 1,
   FREEZE: 2,
   RESOLVE: 3,
+  CLAIM: 4,
 };
 
 /** Builds the entire deterministic action schedule before any chain call occurs. */
@@ -48,6 +50,11 @@ export function buildDemoRunPlan(
     });
     actions.push({
       type: "RESOLVE",
+      market,
+      atOffsetSeconds: market.videoStartSeconds + market.bettingWindowSeconds + market.resolveDelaySeconds,
+    });
+    actions.push({
+      type: "CLAIM",
       market,
       atOffsetSeconds: market.videoStartSeconds + market.bettingWindowSeconds + market.resolveDelaySeconds,
     });

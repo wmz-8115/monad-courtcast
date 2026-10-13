@@ -14,6 +14,7 @@ const adminAddressText = process.env.COURTCAST_OPERATOR_ADMIN_ADDRESS;
 const publicDemoStart = process.env.COURTCAST_DEMO_PUBLIC_START === "true";
 const cooldownSeconds = Number.parseInt(process.env.COURTCAST_DEMO_COOLDOWN_SECONDS ?? "300", 10);
 const maximumSessions = Number.parseInt(process.env.COURTCAST_DEMO_MAX_SESSIONS ?? "8", 10);
+const targetOperatorMusdc = Number.parseInt(process.env.COURTCAST_OPERATOR_TARGET_MUSDC ?? "100000", 10);
 
 if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) throw new Error("COURTCAST_OPERATOR_PORT 必须是有效端口。");
 if (allowedOrigin === undefined || allowedOrigin.trim() === "") {
@@ -24,6 +25,7 @@ if (!publicDemoStart && (adminAddressText === undefined || !isAddress(adminAddre
 }
 if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0) throw new Error("COURTCAST_DEMO_COOLDOWN_SECONDS 必须是非负整数。");
 if (!Number.isSafeInteger(maximumSessions) || maximumSessions < 1) throw new Error("COURTCAST_DEMO_MAX_SESSIONS 必须是大于零的整数。");
+if (!Number.isSafeInteger(targetOperatorMusdc) || targetOperatorMusdc < 0) throw new Error("COURTCAST_OPERATOR_TARGET_MUSDC 必须是非负整数。");
 
 const adminAddress = adminAddressText?.toLowerCase() as Address | undefined;
 const adapter = new MonadOperatorChainAdapter(readOperatorRuntimeConfig());
@@ -188,9 +190,19 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`CourtCast 私有运营服务已监听端口 ${port}。允许来源：${allowedOrigin}`);
-  console.log(`链上操作钱包：${adapter.account.address}`);
-  console.log(`启动模式：${publicDemoStart ? `受限公开演示（最多 ${maximumSessions} 次，冷却 ${cooldownSeconds} 秒）` : "管理钱包签名"}`);
+async function launch() {
+  const balance = await adapter.ensureMinimumBalance(targetOperatorMusdc);
+  console.log(`运营账号 mUSDC 余额：${balance / 1_000_000n}（目标 ${targetOperatorMusdc}）。`);
+
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`CourtCast 私有运营服务已监听端口 ${port}。允许来源：${allowedOrigin}`);
+    console.log(`链上操作钱包：${adapter.account.address}`);
+    console.log(`启动模式：${publicDemoStart ? `受限公开演示（最多 ${maximumSessions} 次，冷却 ${cooldownSeconds} 秒）` : "管理钱包签名"}`);
+  });
+  setInterval(() => void tick(), 1_000);
+}
+
+void launch().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
 });
-setInterval(() => void tick(), 1_000);

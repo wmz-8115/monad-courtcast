@@ -67,6 +67,44 @@ export class MonadOperatorChainAdapter implements OperatorChainAdapter {
     });
   }
 
+  /**
+   * Tops the testnet operator up to a target balance without minting again on
+   * every service restart. MockUSDC only permits its owner to call mint().
+   */
+  async ensureMinimumBalance(targetMusdc: number): Promise<bigint> {
+    if (!Number.isSafeInteger(targetMusdc) || targetMusdc < 0) {
+      throw new Error("运营账号 mUSDC 目标余额必须是非负整数。");
+    }
+    const target = BigInt(targetMusdc) * 1_000_000n;
+    const [owner, balance] = await Promise.all([
+      this.#publicClient.readContract({
+        address: this.#config.mockUsdcAddress,
+        abi: mockUsdcAbi,
+        functionName: "owner",
+      }),
+      this.#publicClient.readContract({
+        address: this.#config.mockUsdcAddress,
+        abi: mockUsdcAbi,
+        functionName: "balanceOf",
+        args: [this.account.address],
+      }),
+    ]);
+    if (typeof owner !== "string" || owner.toLowerCase() !== this.account.address.toLowerCase()) {
+      throw new Error(`运营账号 ${this.account.address} 不是 mUSDC 合约所有者，无法铸造测试币。`);
+    }
+    if (typeof balance !== "bigint") throw new Error("无法读取运营账号 mUSDC 余额。");
+    if (balance >= target) return balance;
+
+    const hash = await this.#walletClient.writeContract({
+      address: this.#config.mockUsdcAddress,
+      abi: mockUsdcAbi,
+      functionName: "mint",
+      args: [this.account.address, target - balance],
+    });
+    await this.#waitForSuccess(hash);
+    return target;
+  }
+
   async createMarket(question: string, closeAt: number, resolveAt: number): Promise<bigint> {
     const hash = await this.#walletClient.writeContract({
       address: this.#config.predictionMarketAddress,
@@ -92,7 +130,7 @@ export class MonadOperatorChainAdapter implements OperatorChainAdapter {
     return eventArgs.marketId;
   }
 
-  async placeBet(marketId: bigint, side: DemoOutcome, amountMusdc: number): Promise<void> {
+  async placeBet(marketId: bigint, side: DemoOutcome, amountMusdc: number): Promise<boolean> {
     const amount = BigInt(amountMusdc) * 1_000_000n;
     await this.#ensureApproval();
     const balance = await this.#publicClient.readContract({
@@ -102,7 +140,7 @@ export class MonadOperatorChainAdapter implements OperatorChainAdapter {
       args: [this.account.address],
     });
     if (typeof balance !== "bigint" || balance < amount) {
-      throw new Error("运营账号 mUSDC 不足，无法执行自动下注。");
+      return false;
     }
 
     const hash = await this.#walletClient.writeContract({
@@ -112,6 +150,7 @@ export class MonadOperatorChainAdapter implements OperatorChainAdapter {
       args: [marketId, sideToContractOutcome(side), amount],
     });
     await this.#waitForSuccess(hash);
+    return true;
   }
 
   async freezeMarket(marketId: bigint): Promise<void> {
@@ -142,6 +181,28 @@ export class MonadOperatorChainAdapter implements OperatorChainAdapter {
       args: [marketId],
     });
     await this.#waitForSuccess(hash);
+  }
+
+  async claim(marketId: bigint): Promise<boolean> {
+    const position = await this.#publicClient.readContract({
+      address: this.#config.predictionMarketAddress,
+      abi: predictionMarketAbi,
+      functionName: "getUserPosition",
+      args: [marketId, this.account.address],
+    });
+    if (!Array.isArray(position) || typeof position[0] !== "bigint" || typeof position[1] !== "bigint") {
+      throw new Error("无法读取运营账号的演示仓位。");
+    }
+    if (position[0] + position[1] === 0n) return false;
+
+    const hash = await this.#walletClient.writeContract({
+      address: this.#config.predictionMarketAddress,
+      abi: predictionMarketAbi,
+      functionName: "claim",
+      args: [marketId],
+    });
+    await this.#waitForSuccess(hash);
+    return true;
   }
 
   async #ensureApproval(): Promise<void> {
