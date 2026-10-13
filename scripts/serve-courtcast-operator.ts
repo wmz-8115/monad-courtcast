@@ -127,11 +127,19 @@ async function tick() {
   }
 }
 
-function startSession() {
+function requestedStartAt(body: Record<string, unknown>): number {
+  const now = Math.floor(Date.now() / 1_000);
+  if (typeof body.startedAt !== "number" || !Number.isSafeInteger(body.startedAt)) return now;
+  // The browser sends the click time so playback can begin without waiting for
+  // the network. Keep the schedule bounded to a recent real interaction.
+  return Math.abs(now - body.startedAt) <= 30 ? body.startedAt : now;
+}
+
+function startSession(startedAt = Math.floor(Date.now() / 1_000)) {
   const eligibility = startEligibility();
   if (!eligibility.canStart) return eligibility;
   operator = new DemoOperator(prerecordedTennisMarkets);
-  operator.start(Math.floor(Date.now() / 1_000));
+  operator.start(startedAt);
   completedAt = undefined;
   lastError = undefined;
   sessionCount += 1;
@@ -165,11 +173,12 @@ const server = createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/v1/session/start") {
       const eligibility = startEligibility();
       if (!eligibility.canStart) { reply(response, request, 409, { ...eligibility, ...sessionSnapshot() }); return; }
+      const body = await readJson(request);
+      const startedAt = requestedStartAt(body);
       if (publicDemoStart) {
-        startSession();
+        startSession(startedAt);
         reply(response, request, 201, sessionSnapshot()); return;
       }
-      const body = await readJson(request);
       if (typeof body.address !== "string" || !isAddress(body.address) || typeof body.nonce !== "string" || typeof body.signature !== "string") {
         reply(response, request, 400, { error: "缺少有效的钱包地址、nonce 或签名。" }); return;
       }
@@ -180,7 +189,7 @@ const server = createServer(async (request, response) => {
       const valid = await verifyMessage({ address: body.address as Address, message: startMessage(body.nonce), signature: body.signature as Hex });
       if (!valid) { reply(response, request, 401, { error: "管理钱包签名无效。" }); return; }
 
-      startSession();
+      startSession(startedAt);
       reply(response, request, 201, sessionSnapshot()); return;
     }
 
